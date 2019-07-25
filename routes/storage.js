@@ -1,45 +1,74 @@
 const express = require("express");
-
+const Validator = require("validator");
 const router = express.Router();
 
-const newArr = new Array();
-
-newArr[0] = "josh";
-newArr[1] = "jack";
-
-console.log(newArr[1]);
+const item = require("../models/itemModel.js");
+const validateLoginInput = require("../validation/itemValid.js");
 
 router.get("/test", (req, res) => {
 
-    res.send("test");
+  res.json({
+    message: "test"
+  });
 });
 
 router.get("/getAllItems", (req, res) => {
-    res.send(`${newArr}`);
+  const errors = {};
+  item.find()
+    .then(items => {
+      if (!items) {
+        errors.noItems = "There are no items";
+        res.status(404).json(errors);
+      }
+      res.json(items);
+    })
+    .catch(err => res.status(404).json({ noItems: "There are no items" }));
 });
 
-router.post('/addItem', (req,res) => {
-	
-	for (i in req.body.item){
-        newArr[i] = req.body.item[i]
-	}
-	
-	res.send(`All items are:  ${newArr}`);
+router.post('/addItem', (req, res) => {
+
+  let vu = validateLoginInput(req.body);
+
+  if (vu.isValid) {
+    const newItem = new item({
+      username: req.body.username,
+      message: req.body.message
+    });
+     newItem.save().then(() => res.send('complete'));
+    } else {
+      res.send(vu);
+    }
+  } 
+);
+
+router.put('/upItemName', (req, res) => {
+
+  var search = { username: req.body.searchname };
+  var newName = { username: req.body.username };
+
+  item.findOneAndUpdate(search, newName)
+    .then(items => {
+      if (!items) {
+        errors.noItems = "There are no items";
+        res.status(404).json(errors);
+      }
+      res.send('updated');
+    })
+    .catch(err => res.status(404).json({ noItems: "There are no items belonging to this username to update" }));
+
 });
 
-router.put('/upItem1', (req,res) => {
-
-        newArr[0] = req.body.item
-
-	res.send(`The new list of items are: ${newArr}`);
+router.delete('/delItemName', (req, res) => {
+  var search = { username: req.body.username };
+  item.findOneAndDelete(search)
+    .then(items => {
+      if (!items) {
+        errors.noItems = "There are no items";
+        res.status(404).json(errors);
+      }
+      res.send('Removed');
+    })
+    .catch(err => res.status(404).json({ noItems: "There are no items to delete with this username" }));
 });
-
-router.delete('/delItem', (req,res) => {
-	
-	var item = req.body.deleteItem;      
-	delete newArr[item];
-	res.send(`The remaining items are:  ${newArr}`);
-});
-
 
 module.exports = router;
