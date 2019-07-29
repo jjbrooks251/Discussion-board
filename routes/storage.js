@@ -1,9 +1,11 @@
 const express = require("express");
 const Validator = require("validator");
 const router = express.Router();
+const bcrypt = require('bcryptjs');
 
 const item = require("../models/itemModel.js");
 const validateLoginInput = require("../validation/itemValid.js");
+const emailhash = require("../validation/hash.js");
 
 router.get("/test", (req, res) => {
 
@@ -14,7 +16,7 @@ router.get("/test", (req, res) => {
 
 router.get("/getAllItems", (req, res) => {
   const errors = {};
-  item.find()
+  item.find({}, '-__v -_id')
     .then(items => {
       if (!items) {
         errors.noItems = "There are no items";
@@ -30,11 +32,23 @@ router.post('/addItem', (req, res) => {
   let vu = validateLoginInput(req.body);
 
   if (vu.isValid) {
+
     const newItem = new item({
       username: req.body.username,
+      email: req.body.email,
+      //email: emailHash(req.body.email),
       message: req.body.message
     });
-     newItem.save().then(() => res.send('complete'));
+
+     bcrypt.hash(req.body.email, 15)
+      .then((hash) => {
+        newItem.email = hash
+        newItem.save()
+        res.status(200).send("Added New Item")
+      })
+      .catch(err => res.status(555).json({ "Fault": `${err}` }))
+
+     //newItem.save().then(() => res.send('complete'));
     } else {
       res.send(vu);
     }

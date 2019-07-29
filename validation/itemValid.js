@@ -17,6 +17,10 @@ module.exports = function validateLoginInput(data) {
         errors.message = "please enter a message to send";
     }
 
+    if (!Validator.isEmail(data.email)) {
+        errors.email = "Please enter a valid email";
+    }
+
     return {
         errors,
         isValid: isEmpty(errors)
